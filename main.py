@@ -10,6 +10,7 @@ from getnanoIDs import get_panel_ids
 import numpy as np
 from PIL import Image
 import json
+import sys
 
 
 def get_dominant_color(image, k=5, resize_factor=0.01):
@@ -166,14 +167,16 @@ def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5):
     
     # Sort colors by counts
     sorted_indices = np.argsort(counts)[::-1]
-    most_frequent_colors = colors[sorted_indices][:num_colors]
+    most_frequent_colors = colors[sorted_indices][:10]
 
     # Calculate brightness of each color (using the luminosity formula) and sort
     brightness = 0.299 * most_frequent_colors[:, 0] + 0.587 * most_frequent_colors[:, 1] + 0.114 * most_frequent_colors[:, 2]
     brightness_sorted_indices = np.argsort(brightness)
     
+    
     # Return the colors sorted by brightness
-    return most_frequent_colors[brightness_sorted_indices]
+    brightest_colors = most_frequent_colors[brightness_sorted_indices]
+    return brightest_colors[:num_colors]
 
 def split_image(input_image, partitions):
     """
@@ -257,13 +260,12 @@ def main():
 
             # Draw the dominant colors for this partition
             for i, color in enumerate(dom_colors):
+                color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+                hex_colors.append(color_hex)
                 if config["show_visual"]:
                     color_height = partition_height / len(dom_colors)
                     color_top = top + (i * color_height)
                     color_bottom = top + ((i + 1) * color_height)
-                color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
-                hex_colors.append(color_hex)
-                if config["show_visual"]:
                     canvas.create_rectangle(left, color_top, right, color_bottom, fill=color_hex, outline=color_hex)
 
         if config["use_nanoleaf"]:
@@ -271,7 +273,6 @@ def main():
             for panel_id_, i in zip(panel_ids,range(len(panel_ids))):
                 panel_colors[panel_id_] = hex_colors[i]
             set_individual_panel_colors(panel_colors)
-            # set_individual_panel_colors({35422: hex_colors[2], 57011: hex_colors[3], 33728: hex_colors[1]})
 
         if config["show_visual"]:
             root.update_idletasks()
@@ -280,4 +281,8 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        hex_color = "#FFFFFF"
+        print("Usage: py set_hex.py #HEXCOLOR")
+        # sys.exit(1)
     main()
