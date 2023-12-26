@@ -211,6 +211,7 @@ def split_image(input_image, partitions):
 
 
 def main():
+    print("Starting...")
     with open("config.json", "r") as f:
         config = json.load(f)
 
@@ -233,6 +234,7 @@ def main():
         panel_ids = get_panel_ids()
         num_clusters = len(panel_ids)
 
+    print("Running...")
     while True:
         screen = ImageGrab.grab(all_screens=True)
         screen_partitions = split_image(screen, partitions)
@@ -253,13 +255,15 @@ def main():
                 bottom = partition[1][1] * window_height
                 partition_height = bottom - top
 
-                # Draw the dominant colors for this partition
-                for i, color in enumerate(dom_colors):
+            # Draw the dominant colors for this partition
+            for i, color in enumerate(dom_colors):
+                if config["show_visual"]:
                     color_height = partition_height / len(dom_colors)
                     color_top = top + (i * color_height)
                     color_bottom = top + ((i + 1) * color_height)
-                    color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
-                    hex_colors.append(color_hex)
+                color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+                hex_colors.append(color_hex)
+                if config["show_visual"]:
                     canvas.create_rectangle(left, color_top, right, color_bottom, fill=color_hex, outline=color_hex)
 
         if config["use_nanoleaf"]:

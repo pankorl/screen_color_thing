@@ -1,6 +1,11 @@
 import requests
+import json
 
-nanoleaf_ip = "192.168.1.83"  # Replace with your Nanoleaf IP
+with open("auth.json", "r") as f:
+    auth_ip = json.load(f)
+
+DEVICE_IP = auth_ip["ip"]
+nanoleaf_ip = DEVICE_IP
 
 url = f"http://{nanoleaf_ip}:16021/api/v1/new"
 
