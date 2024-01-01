@@ -1,5 +1,7 @@
 import requests
 import json
+import os
+import asyncio
 
 # Function to convert hex color to RGB
 def hex_to_rgb(hex_color):
@@ -32,13 +34,16 @@ def send_effect_data(effect_data):
         print(f"Response: {response.text}")
 
 # Function to set individual panel colors with fade
-def set_individual_panel_colors(panel_colors, transition_time=100):
+async def set_individual_panel_colors(panel_colors, transition_time=100):
     for panel_id, hex_color in panel_colors.items():
         rgb_color = hex_to_rgb(hex_color)
         effect_data = create_single_panel_effect_data(panel_id, rgb_color, transition_time)
         send_effect_data(effect_data)
 
-with open("auth.json", "r") as f:
+script_dir = os.path.dirname(os.path.abspath(__file__))
+auth_file_path = os.path.join(script_dir, 'auth.json')
+
+with open(auth_file_path, "r") as f:
     auth_ip = json.load(f)
 
 DEVICE_IP = auth_ip["ip"]

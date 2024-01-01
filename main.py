@@ -1,3 +1,4 @@
+from logging import root
 import cv2
 import numpy as np
 from PIL import ImageGrab, Image
@@ -5,178 +6,101 @@ import tkinter as tk
 import time
 import io
 from kmodes.kmodes import KModes
-from nanoleaf import set_individual_panel_colors
+from nanoleaf_with_lib import set_individual_panel_colors, start_fade, nl
 from getnanoIDs import get_panel_ids
 import numpy as np
 from PIL import Image
 import json
 import sys
+import os
+import asyncio
+from screencap import capture_screen
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
-def get_dominant_color(image, k=5, resize_factor=0.01):
-    # Resize the image
-    width, height = int(image.width * resize_factor), int(image.height * resize_factor)
-    image = image.resize((width, height))
+color_history = []  # Global variable to store color history
 
-    # Convert image to OpenCV format and then to a list of pixels
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    pixels = image.reshape(-1, 3)
+def color_distance(color1, color2):
+    """Calculate the Euclidean distance between two RGB colors."""
+    return np.linalg.norm(np.array(color1) - np.array(color2))
 
-    # Convert to floating point for OpenCV k-means function
-    pixels = np.float32(pixels)
-
-    # Define criteria and apply kmeans()
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-    _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-
-    # Count labels to find the most common cluster
-    _, counts = np.unique(labels, return_counts=True)
-
-    # Combine centers with their counts
-    combined = list(zip(centers, counts))
+def significant_color_change(new_colors, threshold=10):
+    """
+    Determine if there's a significant change in colors.
+    Compares new colors to color history.
+    """
+    if not color_history:
+        return True  # If no history, always update
     
-    # Sort based on counts
-    combined.sort(key=lambda x: x[1], reverse=True)
+    last_colors = color_history[-1]
+    for new_color in new_colors:
+        if all(color_distance(new_color, old_color) > threshold for old_color in last_colors):
+            return True  # Significant change detected
+    return False  # No significant change
+
+def update_color_history(colors):
+    """
+    Update the color history with new colors.
+    """
+    color_history.append(colors)
+    if len(color_history) > 10:  # Keep only recent 10 history states
+        color_history.pop(0)
+
+def is_color_greyish(color, grey_tolerance=20):
+    """
+    Check if a color is close to grey.
+    A color is considered 'greyish' if the R, G, and B values are within a certain range of each other.
+    """
+    r, g, b = color
+    max_val = max(r, g, b)
+    min_val = min(r, g, b)
+    return (max_val - min_val) <= grey_tolerance
+
+def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, brightness_threshold=60, similarity_threshold=30):
+    """
+    outputs the most interesting colors.
+    """
+    # Convert the image to numpy array
+    data = np.array(image)
     
-    # Extract sorted centers
-    sorted_centers = [x[0] for x in combined]
+    # binning
+    quantized = data // bin_size * bin_size
     
-    # Convert color to RGB format
-    sorted_centers = [color[::-1] for color in sorted_centers]
-    return sorted_centers
-
-    # Convert color to RGB format
-    dominant_color = dominant_color[::-1]
-    return dominant_color
-
-def get_dominant_color_sorted_by_brightness(image, k=5, resize_factor=0.01):
-    # Resize the image
-    width, height = int(image.width * resize_factor), int(image.height * resize_factor)
-    image = image.resize((width, height))
-
-    # Convert image to OpenCV format and then to a list of pixels
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    pixels = image.reshape(-1, 3)
-
-    # Convert to floating point for OpenCV k-means function
-    pixels = np.float32(pixels)
-
-    # Define criteria and apply kmeans()
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-    _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-
-    # Convert centers to RGB format and calculate brightness
-    centers = [center[::-1] for center in centers]  # BGR to RGB
-    brightness = [0.299*color[0] + 0.587*color[1] + 0.114*color[2] for color in centers]  # Calculate brightness
-
-    # Combine centers with their brightness
-    combined = list(zip(centers, brightness))
+    # get bins with counts
+    colors, counts = np.unique(quantized.reshape(-1, 3), axis=0, return_counts=True)
     
-    # Sort based on brightness
-    combined.sort(key=lambda x: x[1], reverse=True)
+    # sort bins by count
+    sorted_indices = np.argsort(counts)[::-1]
+    most_frequent_colors = colors[sorted_indices]
+
+    # filter by luminoscity
+    # brighter_colors = [color for color in most_frequent_colors if 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2] > brightness_threshold]
+
+    # Remove greyish colors
+    unique_colors = [color for color in most_frequent_colors if not is_color_greyish(color)]
+
+    # Remove colors that are too similar
+    for color in most_frequent_colors:
+        if not any(color_distance(color, unique_color) < similarity_threshold for unique_color in unique_colors):
+            unique_colors.append(color)
     
-    # Extract sorted centers
-    sorted_centers = [x[0] for x in combined]
-    
-    return sorted_centers
-
-def update_color_display(window, color):
-    color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
-    window.config(bg=color_hex)
-
-def get_dominant_color_sorted_by_saturation(image, k=5, resize_factor=0.01):
-    # Resize the image
-    width, height = int(image.width * resize_factor), int(image.height * resize_factor)
-    image = image.resize((width, height))
-
-    # Convert image to OpenCV format and then to a list of pixels
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    pixels = image.reshape(-1, 3)
-
-    # Convert to floating point for OpenCV k-means function
-    pixels = np.float32(pixels)
-
-    # Define criteria and apply kmeans()
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-    _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-
-    # Convert centers to HSV format and calculate saturation
-    centers = [cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0] for color in centers]
-
-    # Sort by the saturation value (the 'S' in HSV)
-    centers.sort(key=lambda x: x[1], reverse=True)
-    
-    # Convert sorted centers back to RGB format
-    sorted_centers = [cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_HSV2RGB)[0][0] for color in centers]
-    
-    return sorted_centers
-
-def get_dominant_color_mode(image, k=5, resize_factor=0.01):
-    # Resize the image
-    width, height = int(image.width * resize_factor), int(image.height * resize_factor)
-    image = image.resize((width, height))
-
-    # Convert image to OpenCV format and then to a list of pixels
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    pixels = image.reshape(-1, 3)
-
-    # Initialize the k-modes
-    km = KModes(n_clusters=k, init='Huang', n_init=k, verbose=1)
-    clusters = km.fit_predict(pixels)
-
-    # Find the modes
-    modes = km.cluster_centroids_
-    modes = modes.astype(int)
-
-    # Convert modes to RGB format
-    modes = [color[::-1] for color in modes]  # BGR to RGB
-    return modes
+    # If there's a significant color change, update the color history
+    if not config["less_sensitive"] or significant_color_change(unique_colors):
+        update_color_history(unique_colors)
+        return unique_colors[:num_colors]
+    else:
+        # Return the last known good color set if no significant change
+        return color_history[-1][:num_colors] if color_history else unique_colors[:num_colors]
 
 def resize_image(image, resize_factor=0.1):
+    """
+    Resizes input image to 10% the size (1% of the total pixel count)
+
+    :param image: input image.
+    :param resize_factor: default to 0.1 (10%)
+    """
     width, height = int(image.width * resize_factor), int(image.height * resize_factor)
     return image.resize((width, height))
-
-def quantize_color(image, bin_size):
-    """Quantize the colors by binning them"""
-    # Convert the image to numpy array
-    data = np.array(image)
-    
-    # Floor the color values to the nearest bin
-    quantized = data // bin_size * bin_size
-    
-    # Get the unique colors and counts
-    colors, counts = np.unique(quantized.reshape(-1, 3), axis=0, return_counts=True)
-    
-    # Sort colors by counts
-    sorted_indices = np.argsort(counts)[::-1]
-    sorted_colors = colors[sorted_indices]
-    
-    # Return the most frequent colors
-    return sorted_colors[:5]
-
-def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5):
-    """Quantize the colors by binning them and then sort the top colors by brightness"""
-    # Convert the image to numpy array
-    data = np.array(image)
-    
-    # Floor the color values to the nearest bin
-    quantized = data // bin_size * bin_size
-    
-    # Get the unique colors and counts
-    colors, counts = np.unique(quantized.reshape(-1, 3), axis=0, return_counts=True)
-    
-    # Sort colors by counts
-    sorted_indices = np.argsort(counts)[::-1]
-    most_frequent_colors = colors[sorted_indices][:10]
-
-    # Calculate brightness of each color (using the luminosity formula) and sort
-    brightness = 0.299 * most_frequent_colors[:, 0] + 0.587 * most_frequent_colors[:, 1] + 0.114 * most_frequent_colors[:, 2]
-    brightness_sorted_indices = np.argsort(brightness)
-    
-    
-    # Return the colors sorted by brightness
-    brightest_colors = most_frequent_colors[brightness_sorted_indices]
-    return brightest_colors[:num_colors]
 
 def split_image(input_image, partitions):
     """
@@ -212,43 +136,95 @@ def split_image(input_image, partitions):
 
     return cropped_images
 
+def on_drag(event):
+    x = root.winfo_x() + event.x - click_x
+    y = root.winfo_y() + event.y - click_y
+    root.geometry(f"+{x}+{y}")
 
-def main():
-    print("Starting...")
-    with open("config.json", "r") as f:
-        config = json.load(f)
+def on_click(event):
+    global click_x, click_y
+    click_x = event.x
+    click_y = event.y
 
+def calculate_color_contrast_level(image):
+    """
+    Calculate the contrast level of an image based on the variance of color distances.
+    """
+    data = np.array(image)
+    n_pixels = data.shape[0] * data.shape[1]
+
+    # Compute mean color of the image
+    mean_color = np.mean(data.reshape(n_pixels, 3), axis=0)
+
+    # Calculate the Euclidean distance of each pixel's color from the mean color
+    color_distances = np.linalg.norm(data.reshape(n_pixels, 3) - mean_color, axis=1)
+
+    # Calculate the variance of these distances
+    variance = np.var(color_distances)
+    return variance
+
+
+def calculate_luminosity(color):
+    """Calculate the luminosity of a given RGB color."""
+    return 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
+
+def sort_colors_by_luminosity(colors):
+    """Sort a list of RGB colors by luminosity."""
+    return sorted(colors, key=calculate_luminosity, reverse=True)
+
+
+async def main():
+    # init()
     num_clusters = 3
-    # partitions = [[[0,0.5],[0,0.5]],[[0.5,1],[0,0.5]],[[0,0.5],[0.5,1]],[[0.5,1],[0.5,1]]]
-    # partitions = [[[0,1],[0,0.5]],[[0,1],[0.5,1]]]
+    color_similarity_thresh = 100
+    bin_size = 30
     partitions = [[[0,1],[0,1]]]
 
+    global root
     if config["show_visual"]:
         root = tk.Tk()  
+        root.overrideredirect(True)
+        root.configure(bg='black')
         root.title("Cluster Colors")
-        window_height = 200
-        window_width = 200
+        window_height = 120
+        window_width = 20
         root.geometry(f"{window_width}x{window_height}")  # Set the window size to be big enough to hold all partitions
-
+        # Bind the click and drag events
+        root.bind('<Button-1>', on_click)
+        root.bind('<B1-Motion>', on_drag)
+        root.attributes('-topmost', True)
         canvas = tk.Canvas(root, width=window_width, height=window_height)
         canvas.pack()
 
     if config["use_nanoleaf"]:
         panel_ids = get_panel_ids()
         num_clusters = len(panel_ids)
+        nl.enable_extcontrol()
+
+    window_name = None  # Replace with the actual window name
+    screen_width = 1920  # Replace with your screen width
+    screen_height = 1080  # Replace with your screen height
 
     print("Running...")
     while True:
-        screen = ImageGrab.grab(all_screens=True)
-        screen_partitions = split_image(screen, partitions)
-        if config["show_visual"]:
-            canvas.delete("all")  # Clear the canvas before redrawing
-        hex_colors = []
+        # screen = ImageGrab.grab(all_screens=True)
+        screen = capture_screen(window_name, screen_width, screen_height)
+        # screen.save("screencap.png")
 
-        for partition, screen_partition in zip(partitions, screen_partitions):
-            screen_partition = resize_image(screen_partition)
-            dom_colors = quantize_color_and_sort_by_brightness(screen_partition, 20, num_clusters)
-            # dom_colors = get_dominant_color_mode(screen_partition, k=num_clusters, resize_factor=0.1)
+        screen_partitions = split_image(screen, partitions)
+        contrast_levels = [calculate_color_contrast_level(partition) for partition in screen_partitions]
+
+        if config["show_visual"]:
+            canvas.delete("all")
+
+        hex_colors = []
+        for partition, screen_partition, contrast in zip(partitions, screen_partitions, contrast_levels):
+            # screen_partition = resize_image(screen_partition)
+
+            adjusted_similarity_thresh = color_similarity_thresh + (contrast / 1000)
+            dom_colors = quantize_color_and_sort_by_brightness(screen_partition, bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh)
+
+            dom_colors = sort_colors_by_luminosity(dom_colors)
 
             if config["show_visual"]:
                 # Calculate the position of the partition on the canvas
@@ -258,7 +234,7 @@ def main():
                 bottom = partition[1][1] * window_height
                 partition_height = bottom - top
 
-            # Draw the dominant colors for this partition
+                        # Draw the dominant colors for this partition
             for i, color in enumerate(dom_colors):
                 color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
                 hex_colors.append(color_hex)
@@ -272,17 +248,22 @@ def main():
             panel_colors = {}   
             for panel_id_, i in zip(panel_ids,range(len(panel_ids))):
                 panel_colors[panel_id_] = hex_colors[i]
-            set_individual_panel_colors(panel_colors)
+            await set_individual_panel_colors(panel_colors)
+            # asyncio.run(start_fade(panel_colors, 3))
 
         if config["show_visual"]:
             root.update_idletasks()
             root.update()
-        # time.sleep(0.2)
-
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        hex_color = "#FFFFFF"
-        print("Usage: py set_hex.py #HEXCOLOR")
-        # sys.exit(1)
-    main()
+    config_file_path = os.path.join(script_dir, 'config.json')
+    print("Starting...")
+    with open(config_file_path, "r") as f:
+        config = json.load(f)
+    if len(sys.argv) == 1:
+        print("Using config.json")
+    else:
+        config["use_nanoleaf"] = True if sys.argv.count("nl") > 0 else False
+        config["show_visual"] = True if sys.argv.count("gui") > 0 else False
+        print(f"Config: {config}")
+    asyncio.run(main())
