@@ -7,5 +7,6 @@
     "min_color_amnt": 10,
     "screen_partitions": [],
     "default_num_colors": 3,
-    "transition_time": 3
+    "transition_time": 5,
+    "quick_change_thresh": 120
 }

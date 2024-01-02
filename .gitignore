@@ -3,3 +3,6 @@ panelIDs.json
 *.png
 __pycache__
 testing.py
+*.bat*
+*.vbs*
+runvbs.*

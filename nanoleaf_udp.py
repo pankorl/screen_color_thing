@@ -42,13 +42,13 @@ def create_udp_message(panels_info):
     return message
 
 # Function to send the message via UDP
-async def send_udp_message(ip, port, message):
+def send_udp_message(ip, port, message):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(message, (ip, port))
     sock.close()
 
-async def set_individual_panel_colors(panel_colors, transition_time=3, fade=True):
+def set_individual_panel_colors(panel_colors, transition_time=3, fade=True):
     transition_time = transition_time if fade else 0
     panels_info = [{'id': panel_id, 'color': hex_to_rgb(panel_color), 'transition_time': transition_time} for panel_id, panel_color in panel_colors.items()]
     udp_message = create_udp_message(panels_info)
-    await send_udp_message(DEVICE_IP, 60222, udp_message)
+    send_udp_message(DEVICE_IP, 60222, udp_message)
