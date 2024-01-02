@@ -1,11 +1,10 @@
 {
     "use_nanoleaf": true,
     "show_visual": true,
-    "sort_by_luminoscity": false,
-    "sort_by_saturation": true,
     "less_sensitive": false,
     "min_color_amnt": 10,
     "screen_partitions": [],
+    "gui_w_h": [20, 120],
     "default_num_colors": 3,
     "transition_time": 5,
     "quick_change_thresh": 120

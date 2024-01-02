@@ -8,6 +8,8 @@ def color_set_event_handler(id_colors: dict, transition_time: int =None):
     :param transition_time:
     """
 
+
+
     # For nanoleaf with udp:
     set_individual_panel_colors(id_colors, transition_time, fade=False if transition_time == None else transition_time)
 
@@ -15,6 +17,8 @@ def init_event_handler():
     """
     Gets called once when the script starts.
     """
+
+
 
     # For nanoleaf with udp:
     if nl.enable_extcontrol():
@@ -27,6 +31,8 @@ def get_ids():
     Gets called once when the script starts.
     Only needs to return an iterable of the same length as the number of colors.
     """
+
+
 
     # For nanoleaf:
     return get_panel_ids()

@@ -54,7 +54,8 @@ class Worker(QThread):
             partitions = [None]
 
         if config["show_visual"]:
-            overlay = Overlay(20, 120)
+            gui_wh = config["gui_w_h"]
+            overlay = Overlay(gui_wh[0], gui_wh[1])
 
         if config["use_nanoleaf"]:
             panel_ids = get_ids()
