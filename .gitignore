@@ -2,3 +2,4 @@ auth.json
 panelIDs.json
 *.png
 __pycache__
+testing.py
