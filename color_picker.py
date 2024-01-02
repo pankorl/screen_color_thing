@@ -76,11 +76,30 @@ def sort_colors_by_luminosity(colors):
     """Sort a list of RGB colors by luminosity."""
     return sorted(colors, key=calculate_luminosity, reverse=True)
 
+def calculate_color_contrast_level(image):
+    """
+    Calculate the contrast level of an image based on the variance of color distances.
+    """
+    data = np.array(image)
+    n_pixels = data.shape[0] * data.shape[1]
+
+    # Compute mean color of the image
+    mean_color = np.mean(data.reshape(n_pixels, 3), axis=0)
+
+    # Calculate the Euclidean distance of each pixel's color from the mean color
+    color_distances = np.linalg.norm(data.reshape(n_pixels, 3) - mean_color, axis=1)
+
+    # Calculate the variance of these distances
+    variance = np.var(color_distances)
+    return variance
 
 def quantize_color_and_sort_by_brightness(image, bin_size, color_history, num_colors=5, similarity_threshold=30, min_color_amnt=16, less_sensitive=False):
     """
     outputs the most interesting colors.
     """
+    contrast = calculate_color_contrast_level(image)
+    similarity_threshold = similarity_threshold + (contrast / 1000)
+
     # Convert the image to numpy array
     data = np.array(image)
     

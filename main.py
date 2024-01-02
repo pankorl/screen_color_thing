@@ -1,22 +1,18 @@
 from logging import root
-import cv2
 import numpy as np
-from PIL import ImageGrab, Image
 import tkinter as tk
 import time
-import io
-from kmodes.kmodes import KModes
 # from nanoleaf_with_lib import set_individual_panel_colors, nl
 from nanoleaf_udp import set_individual_panel_colors, nl
 from getnanoIDs import get_panel_ids
-import numpy as np
-from PIL import Image
 import json
 import sys
 import os
 import asyncio
 from screencap import capture_screen
 from color_picker import get_colors_from_image, get_colors_from_screen, significant_color_change
+from screen_partitioning import split_image
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 color_history = []  # Global variable to store color history
@@ -29,50 +25,6 @@ def update_color_history(colors):
     if len(color_history) > 10:  # Keep only recent 10 history states
         color_history.pop(0)
 
-def resize_image(image, resize_factor=0.1):
-    """
-    Resizes input image to 10% the size (1% of the total pixel count)
-
-    :param image: input image.
-    :param resize_factor: default to 0.1 (10%)
-    """
-    width, height = int(image.width * resize_factor), int(image.height * resize_factor)
-    return image.resize((width, height))
-
-def split_image(input_image, partitions):
-    """
-    Splits the input image into parts as defined by the partitions array.
-
-    :param input_image: An image file or PIL image object.
-    :param partitions: An array of partitions, each defined by fractional start and end points.
-    :return: A list of cropped image parts.
-    """
-    # Load the image
-    if isinstance(input_image, str):
-        with open(input_image, 'rb') as f:
-            image = Image.open(io.BytesIO(f.read()))
-    else:
-        image = input_image
-
-    # Get the size of the image
-    width, height = image.size
-
-    # List to hold the cropped images
-    cropped_images = []
-
-    # Process each partition
-    for partition in partitions:
-        # Calculate pixel coordinates for the partition
-        left = partition[0][0] * width
-        upper = partition[1][0] * height
-        right = partition[0][1] * width
-        lower = partition[1][1] * height
-
-        # Crop and append the image
-        cropped_images.append(image.crop((left, upper, right, lower)))
-
-    return cropped_images
-
 def on_drag(event):
     x = root.winfo_x() + event.x - click_x
     y = root.winfo_y() + event.y - click_y
@@ -83,32 +35,16 @@ def on_click(event):
     click_x = event.x
     click_y = event.y
 
-def calculate_color_contrast_level(image):
-    """
-    Calculate the contrast level of an image based on the variance of color distances.
-    """
-    data = np.array(image)
-    n_pixels = data.shape[0] * data.shape[1]
-
-    # Compute mean color of the image
-    mean_color = np.mean(data.reshape(n_pixels, 3), axis=0)
-
-    # Calculate the Euclidean distance of each pixel's color from the mean color
-    color_distances = np.linalg.norm(data.reshape(n_pixels, 3) - mean_color, axis=1)
-
-    # Calculate the variance of these distances
-    variance = np.var(color_distances)
-    return variance
-
-
-
 
 async def main():
     # init()
     num_clusters = 3
     color_similarity_thresh = 100
     bin_size = 30
-    partitions = [[[0,1],[0,1]]]
+    partitions = config['screen_partitions']
+    if len(partitions) == 0:
+        # partitions = [[[0,1],[0,1]]]
+        partitions = [None]
 
     global root
     if config["show_visual"]:
@@ -142,23 +78,24 @@ async def main():
     while True:
         time.sleep(0.1)
         # screen = ImageGrab.grab(all_screens=True)
-        screen = capture_screen(window_name, screen_width, screen_height)
         # screen.save("screencap.png")
 
-        screen_partitions = split_image(screen, partitions)
-        contrast_levels = [calculate_color_contrast_level(partition) for partition in screen_partitions]
+        if partitions[0] == None:
+            screen_partitions = [None]
+        else:
+            screen = capture_screen(window_name, screen_width, screen_height)
+            screen_partitions = split_image(screen, partitions)
 
         if config["show_visual"]:
             canvas.delete("all")
 
         hex_colors = []
-        for partition, screen_partition, contrast in zip(partitions, screen_partitions, contrast_levels):
-            # screen_partition = resize_image(screen_partition)
+        for partition, screen_partition in zip(partitions, screen_partitions):
 
-            adjusted_similarity_thresh = color_similarity_thresh + (contrast / 1000)
-            # dom_colors = quantize_color_and_sort_by_brightness(screen_partition, bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh, min_color_amnt=config['min_color_amnt'])
-
-            dom_colors = get_colors_from_screen(bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh, min_color_amnt=config['min_color_amnt'])
+            if partition == None:
+                dom_colors = get_colors_from_screen(bin_size, num_clusters, similarity_threshold=color_similarity_thresh, min_color_amnt=config['min_color_amnt'])
+            else:
+                dom_colors = get_colors_from_image(screen_partition, bin_size, num_clusters, similarity_threshold=color_similarity_thresh, min_color_amnt=config['min_color_amnt'])
 
             if config["show_visual"]:
                 # Calculate the position of the partition on the canvas

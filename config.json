@@ -4,5 +4,6 @@
     "sort_by_luminoscity": false,
     "sort_by_saturation": true,
     "less_sensitive": true,
-    "min_color_amnt": 10
+    "min_color_amnt": 10,
+    "screen_partitions": []
 }
