@@ -6,8 +6,8 @@ import tkinter as tk
 import time
 import io
 from kmodes.kmodes import KModes
-from nanoleaf_with_lib import set_individual_panel_colors, nl
-# from nanoleaf_udp import set_individual_panel_colors, nl
+# from nanoleaf_with_lib import set_individual_panel_colors, nl
+from nanoleaf_udp import set_individual_panel_colors, nl
 from getnanoIDs import get_panel_ids
 import numpy as np
 from PIL import Image
