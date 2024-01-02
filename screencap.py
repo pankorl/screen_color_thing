@@ -14,8 +14,7 @@ def capture_screen_scaled(w, h, scale_factor=0.05):
     dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
     cDC.SelectObject(dataBitMap)
     cDC.BitBlt((0, 0), (w, h), dcObj, (0, 0), win32con.SRCCOPY)
-    
-    bmpinfo = dataBitMap.GetInfo()
+
     bmpstr = dataBitMap.GetBitmapBits(True)
 
     img = np.frombuffer(bmpstr, dtype='uint8')
@@ -38,7 +37,3 @@ def capture_screen_scaled(w, h, scale_factor=0.05):
     win32gui.DeleteObject(dataBitMap.GetHandle())
 
     return screenshot
-
-# Usage example:
-# screenshot = capture_screen("Your Window Name", 1920, 1080, scale_factor=0.1)
-# screenshot.show()  # Or save it with screenshot.save("s

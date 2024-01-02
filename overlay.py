@@ -1,7 +1,5 @@
-# from logging import root
 import tkinter as tk
 import numpy as np
-
 
 class Overlay():
     def __init__(self, width, height):

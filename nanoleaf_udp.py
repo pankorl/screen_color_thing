@@ -6,7 +6,6 @@ import os
 import asyncio
 import math
 
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 auth_file_path = os.path.join(script_dir, 'auth.json')
 
@@ -26,12 +25,8 @@ def hex_to_rgb(hex_color):
     return tuple(int(hex_color[i:i+hlen//3], 16) for i in range(0, hlen, hlen//3))
 
 def create_udp_message(panels_info):
-    # Header bytes
-    header = b'\x00\x03'
-    
     # Start the message with the number of panels (as a 16-bit integer)
     message = struct.pack('>H', len(panels_info))
-
     # Append each panel's information
     for panel in panels_info:
         # Pack panel ID in Big Endian format (as a 16-bit integer)
@@ -44,11 +39,6 @@ def create_udp_message(panels_info):
         transition_time = struct.pack('>H', panel['transition_time'])
         # Append to the message
         message += panel_id + color + white_channel + transition_time
-    
-    # hex_representation = message.hex()
-    # print(hex_representation) 
-    # print(message)
-
     return message
 
 # Function to send the message via UDP
@@ -57,8 +47,6 @@ async def send_udp_message(ip, port, message):
     sock.sendto(message, (ip, port))
     sock.close()
 
-    
-nanoleaf_port = 60222  # Replace with your Nanoleaf port
 async def set_individual_panel_colors(panel_colors, transition_time=3, fade=True):
     transition_time = transition_time if fade else 0
     panels_info = [{'id': panel_id, 'color': hex_to_rgb(panel_color), 'transition_time': transition_time} for panel_id, panel_color in panel_colors.items()]

@@ -45,12 +45,6 @@ def set_panel_color(ip_address, auth_token, panel_id, r, g, b):
 
     return f"Color set for panel {panel_id}"
 
-# Example usage
-# start_udp_stream("192.168.1.100", "your_auth_token")
-# set_panel_color("192.168.1.100", "your_auth_token", 123, 255, 0, 0) # Set panel 123 to red color
-
-# Note: Replace "192.168.1.100" with the actual IP address of your Nanoleaf device and "your_auth_token" with your actual authentication token. Also, replace 123 with the actual panel ID you want to control.
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 auth_file_path = os.path.join(script_dir, 'auth.json')
 

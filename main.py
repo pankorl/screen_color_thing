@@ -51,14 +51,13 @@ async def main():
     screen_width = 1920
     screen_height = 1080
 
-
     print("Running...")
 
     while True:
+        time.sleep(0.1)
 
         all_dom_colors = []
-        # overlay.clear()
-        time.sleep(0.1)
+        hex_colors = []
 
         if partitions[0] == None:
             screen_partitions = [None]
@@ -66,9 +65,7 @@ async def main():
             screen = capture_screen_scaled(screen_width, screen_height)
             screen_partitions = split_image(screen, partitions)
 
-        hex_colors = []
         for partition, screen_partition in zip(partitions, screen_partitions):
-
             if partition == None:
                 dom_colors = get_colors_from_screen(bin_size, num_clusters, similarity_threshold=color_similarity_thresh, min_color_amnt=config['min_color_amnt'])
             else:

@@ -5,9 +5,6 @@ from screencap import capture_screen_scaled
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-
-
-
 def rgb_to_hsv(rgb_color):
     """
     Convert an RGB color to HSV color space.
