@@ -56,7 +56,7 @@ function nlmirror {
 All interactions with the nanoleaf goes through ``colorset_events.py``. 
 The handler functions there can be changed to fit with your own script.
 Add your imports and comment out or remove the function calls for nanoleaf, then add your own function calls inside the event handler functions.
-If 
+
 
 
 # Errors
