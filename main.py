@@ -16,6 +16,28 @@ import sys
 import os
 import asyncio
 from screencap import capture_screen
+import colorsys
+
+def rgb_to_hsv(rgb_color):
+    """
+    Convert an RGB color to HSV color space.
+    """
+    # Normalize the RGB values by dividing by 255
+    r, g, b = [x / 255.0 for x in rgb_color]
+    return colorsys.rgb_to_hsv(r, g, b)
+
+def sort_colors_by_hue(colors):
+    """
+    Sort a list of RGB colors by their hue value in HSV color space.
+    """
+    # Convert RGB colors to HSV
+    hsv_colors = [rgb_to_hsv(color) for color in colors]
+    # Sort colors by the hue value
+    hsv_colors.sort(key=lambda color: color[0])
+    # Convert back to RGB to return
+    new_colors = [colorsys.hsv_to_rgb(*color) for color in hsv_colors]
+    new_colors = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in new_colors]
+    return new_colors
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -109,8 +131,8 @@ def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, similar
     
     # If there's a significant color change, update the color history
     if not config["less_sensitive"] or significant_color_change(unique_colors):
-        if config["less_sensitive"]:
-            update_color_history(unique_colors)
+        # if config["less_sensitive"]:
+            # update_color_history(unique_colors)
         return unique_colors[:num_colors]
     else:
         # Return the last known good color set if no significant change
@@ -190,6 +212,8 @@ def calculate_color_contrast_level(image):
 
 def calculate_luminosity(color):
     """Calculate the luminosity of a given RGB color."""
+    # if isinstance(color, str):
+    #     color = hex_to_rgb(color)
     return 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
 
 def sort_colors_by_luminosity(colors):
@@ -252,7 +276,9 @@ async def main():
             adjusted_similarity_thresh = color_similarity_thresh + (contrast / 1000)
             dom_colors = quantize_color_and_sort_by_brightness(screen_partition, bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh, min_color_amnt=config['min_color_amnt'])
 
+            dom_colors = [hex_to_rgb(color) if isinstance(color, str) else color for color in dom_colors]
             dom_colors = sort_colors_by_luminosity(dom_colors)
+            # dom_colors = sort_colors_by_hue(dom_colors)
 
             if config["show_visual"]:
                 # Calculate the position of the partition on the canvas

@@ -3,6 +3,6 @@
     "show_visual": false,
     "sort_by_luminoscity": false,
     "sort_by_saturation": true,
-    "less_sensitive": false,
+    "less_sensitive": true,
     "min_color_amnt": 10
 }
