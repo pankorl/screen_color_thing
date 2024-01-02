@@ -6,3 +6,10 @@ testing.py
 *.bat*
 *.vbs*
 runvbs.*
+/build/
+/dist/
+*.toc
+*.zip
+*.pyz
+*.txt
+*.html
