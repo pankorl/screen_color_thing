@@ -1,7 +1,7 @@
 import colorsys
 import os
 import numpy as np
-from screencap import capture_screen
+from screencap import capture_screen_scaled
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -147,7 +147,7 @@ def quantize_color_and_sort_by_brightness(image, bin_size, color_history, num_co
         return color_history[-1][:num_colors] if color_history else unique_colors[:num_colors]
 
 def get_colors_from_screen(bin_size, color_history, num_colors=5, similarity_threshold=30, min_color_amnt=16, less_sensitive=False, screen_height=1080, screen_width=1920):
-    screen = capture_screen(None, screen_width, screen_height)
+    screen = capture_screen_scaled(screen_width, screen_height)
     return quantize_color_and_sort_by_brightness(screen, bin_size, color_history, num_colors, similarity_threshold, min_color_amnt, less_sensitive)
 
 def get_colors_from_image(image, bin_size, color_history, num_colors=5, similarity_threshold=30, min_color_amnt=16, less_sensitive=False):

@@ -1,9 +1,10 @@
 {
     "use_nanoleaf": true,
-    "show_visual": false,
+    "show_visual": true,
     "sort_by_luminoscity": false,
     "sort_by_saturation": true,
     "less_sensitive": true,
     "min_color_amnt": 10,
-    "screen_partitions": []
+    "screen_partitions": [],
+    "default_num_colors": 3
 }

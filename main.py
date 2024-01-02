@@ -9,9 +9,10 @@ import json
 import sys
 import os
 import asyncio
-from screencap import capture_screen
+from screencap import capture_screen_scaled
 from color_picker import get_colors_from_image, get_colors_from_screen, significant_color_change
 from screen_partitioning import split_image
+from overlay import Overlay
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,42 +26,19 @@ def update_color_history(colors):
     if len(color_history) > 10:  # Keep only recent 10 history states
         color_history.pop(0)
 
-def on_drag(event):
-    x = root.winfo_x() + event.x - click_x
-    y = root.winfo_y() + event.y - click_y
-    root.geometry(f"+{x}+{y}")
-
-def on_click(event):
-    global click_x, click_y
-    click_x = event.x
-    click_y = event.y
-
-
 async def main():
     # init()
-    num_clusters = 3
+    num_clusters = config["default_num_colors"]
     color_similarity_thresh = 100
     bin_size = 30
     partitions = config['screen_partitions']
+
     if len(partitions) == 0:
         # partitions = [[[0,1],[0,1]]]
         partitions = [None]
 
-    global root
     if config["show_visual"]:
-        root = tk.Tk()  
-        root.overrideredirect(True)
-        root.configure(bg='black')
-        root.title("Cluster Colors")
-        window_height = 120
-        window_width = 20
-        root.geometry(f"{window_width}x{window_height}")  # Set the window size to be big enough to hold all partitions
-        # Bind the click and drag events
-        root.bind('<Button-1>', on_click)
-        root.bind('<B1-Motion>', on_drag)
-        root.attributes('-topmost', True)
-        canvas = tk.Canvas(root, width=window_width, height=window_height)
-        canvas.pack()
+        overlay = Overlay(20, 120)
 
     if config["use_nanoleaf"]:
         panel_ids = get_panel_ids()
@@ -70,24 +48,23 @@ async def main():
         else:
             print("extcontrol failed")
 
-    window_name = None  # Replace with the actual window name
-    screen_width = 1920  # Replace with your screen width
-    screen_height = 1080  # Replace with your screen height
+    screen_width = 1920
+    screen_height = 1080
+
 
     print("Running...")
+
     while True:
+
+        all_dom_colors = []
+        # overlay.clear()
         time.sleep(0.1)
-        # screen = ImageGrab.grab(all_screens=True)
-        # screen.save("screencap.png")
 
         if partitions[0] == None:
             screen_partitions = [None]
         else:
-            screen = capture_screen(window_name, screen_width, screen_height)
+            screen = capture_screen_scaled(screen_width, screen_height)
             screen_partitions = split_image(screen, partitions)
-
-        if config["show_visual"]:
-            canvas.delete("all")
 
         hex_colors = []
         for partition, screen_partition in zip(partitions, screen_partitions):
@@ -97,23 +74,15 @@ async def main():
             else:
                 dom_colors = get_colors_from_image(screen_partition, bin_size, num_clusters, similarity_threshold=color_similarity_thresh, min_color_amnt=config['min_color_amnt'])
 
-            if config["show_visual"]:
-                # Calculate the position of the partition on the canvas
-                left = partition[0][0] * window_width
-                top = partition[1][0] * window_height
-                right = partition[0][1] * window_width
-                bottom = partition[1][1] * window_height
-                partition_height = bottom - top
+            all_dom_colors.append(dom_colors)
 
-            # Draw the dominant colors for this partition
+            # Get hex colors
             for i, color in enumerate(dom_colors):
                 color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
                 hex_colors.append(color_hex)
-                if config["show_visual"]:
-                    color_height = partition_height / len(dom_colors)
-                    color_top = top + (i * color_height)
-                    color_bottom = top + ((i + 1) * color_height)
-                    canvas.create_rectangle(left, color_top, right, color_bottom, fill=color_hex, outline=color_hex)
+
+        if config["show_visual"]:
+            overlay.draw_partitions(partitions, all_dom_colors)
 
         if config["use_nanoleaf"]:
             panel_colors = {}   
@@ -128,12 +97,7 @@ async def main():
                 # No significant change or less sensitive, update colors with fading
                 await set_individual_panel_colors(panel_colors, fade=True) 
             update_color_history(hex_colors)
-            # await set_individual_panel_colors(panel_colors)
-            # asyncio.run(start_fade(panel_colors, 3))
-
-        if config["show_visual"]:
-            root.update_idletasks()
-            root.update()
+  
 
 if __name__ == "__main__":
     config_file_path = os.path.join(script_dir, 'config.json')
