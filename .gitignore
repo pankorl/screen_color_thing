@@ -13,3 +13,4 @@ runvbs.*
 *.pyz
 *.txt
 *.html
+/runvbs/*
