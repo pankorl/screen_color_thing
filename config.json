@@ -1,5 +1,6 @@
 {
-    "use_nanoleaf": true,
+    "use_lights": true,
+    "lights_type": "nanoleaf",
     "show_visual": true,
     "less_sensitive": false,
     "min_color_amnt": 10,

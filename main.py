@@ -57,10 +57,10 @@ class Worker(QThread):
             gui_wh = config["gui_w_h"]
             overlay = Overlay(gui_wh[0], gui_wh[1])
 
-        if config["use_nanoleaf"]:
-            panel_ids = get_ids()
+        if config["use_lights"]:
+            panel_ids = get_ids(config['lights_type'])
             num_clusters = len(panel_ids)
-            init_event_handler()
+            init_event_handler(config['lights_type'])
 
         screen_width = 1920
         screen_height = 1080
@@ -95,7 +95,7 @@ class Worker(QThread):
             if config["show_visual"]:
                 overlay.draw_partitions(partitions, all_dom_colors)
 
-            if config["use_nanoleaf"]:
+            if config["use_lights"]:
                 panel_colors = {}   
                 for panel_id_, i in zip(panel_ids,range(len(panel_ids))):
                     panel_colors[panel_id_] = hex_colors[i]
@@ -103,10 +103,10 @@ class Worker(QThread):
                 # Check for significant color change
                 if  not config["less_sensitive"] and significant_color_change(hex_colors, color_history, threshold=config["quick_change_thresh"]):
                     # If significant color change detected, update colors without fading
-                    color_set_event_handler(panel_colors, 0)
+                    color_set_event_handler(config['lights_type'], panel_colors, 0)
                 else:
                     # No significant change or less sensitive, update colors with fading
-                    color_set_event_handler(panel_colors, config['transition_time']) 
+                    color_set_event_handler(config['lights_type'], panel_colors, config['transition_time']) 
                 update_color_history(hex_colors)
   
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print("Using config.json")
     else:
-        config["use_nanoleaf"] = True if sys.argv.count("nl") > 0 else False
+        config["use_lights"] = True if sys.argv.count("nl") > 0 else False
         config["show_visual"] = True if sys.argv.count("gui") > 0 else False
         config["less_sensitive"] = True if sys.argv.count("ls") > 0 else False
         print(f"Config: {config}")

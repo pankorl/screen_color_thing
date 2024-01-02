@@ -16,17 +16,18 @@
 # Use
 ### Configuration
 - The ``config.json`` file contains the default config values. Some of them can be set through parameters when launching the script (see "Running"):
-```json
+```py
 {
-    "use_nanoleaf": true, <--- set this to false if you just want the overlay with default_num_colors colors
-    "show_visual": true, <--- set this to false if you don't want to run with the overlay
-    "less_sensitive": false, <--- set this to true if color transitions are too choppy
-    "min_color_amnt": 10, <--- determines how much of a color must be present to be seen by the color picker at all. The total amount of colors on the screen is 1080*0.05*1920*0.05 = 5184.
-    "screen_partitions": [], <--- set this if you want to partition the screen into different parts. format for 4 quadrants is [[[0,0.5],[0,0.5]], [[0,0.5],[0.5,1]], [[0.5,1],[0,0.5]], [[0.5,1],[0.5,1]]]
-    "gui_w_h": [20, 120], <--- width and height of the overlay
-    "default_num_colors": 3, <--- number of colors displayed when use_nanoleaf is false
-    "transition_time": 5, <--- transition time sent to color change event handlers
-    "quick_change_thresh": 120 <--- lower threshold for total color distance to instantly change color of panels instead of fading when less_sensitive is false
+    "use_lights": true, # set this to false if you just want the overlay with default_num_colors colors
+    "lights_type": "nanoleaf", # change this to change which event handlers are being called in colorset_events.py. (See "Use with other devices")
+    "show_visual": true, # set this to false if you don't want to run with the overlay
+    "less_sensitive": false, # set this to true if color transitions are too choppy
+    "min_color_amnt": 10, # determines how much of a color must be present to be seen by the color picker at all. The total amount of colors on the screen is 1080*0.05*1920*0.05 = 5184.
+    "screen_partitions": [], # set this if you want to partition the screen into different parts. format for 4 quadrants is [[[0,0.5],[0,0.5]], [[0,0.5],[0.5,1]], [[0.5,1],[0,0.5]], [[0.5,1],[0.5,1]]]
+    "gui_w_h": [20, 120], # width and height of the overlay
+    "default_num_colors": 3, # number of colors displayed when use_lights is false
+    "transition_time": 5, # transition time sent to color change event handlers
+    "quick_change_thresh": 120 # lower threshold for total color distance to instantly change color of panels instead of fading when less_sensitive is false
 }
 ```
 ### Running
@@ -53,10 +54,10 @@ function nlmirror {
 - run this command in powershell by typing for example ``nlmirror nl gui``
 
 # Use with other devices
-All interactions with the nanoleaf goes through ``colorset_events.py``. 
-The handler functions there can be changed to fit with your own script.
-Add your imports and comment out or remove the function calls for nanoleaf, then add your own function calls inside the event handler functions.
-
+- All interactions with the nanoleaf goes through ``colorset_events.py``. 
+- The handler functions there can be changed to fit with your own script.
+- Add your imports and add your own function calls inside the event handler functions.
+- Change ``lights_type`` in ``config.json`` to whatever you want to be passed in as the devicetype parameter in the event handlers. You can make this a string containing multiple words to make the script run on multiple types of devices at once, though this may introduce delays as the script runs on a single CPU thread (untested).
 
 
 # Errors
