@@ -6,7 +6,8 @@ import tkinter as tk
 import time
 import io
 from kmodes.kmodes import KModes
-from nanoleaf_with_lib import set_individual_panel_colors, start_fade, nl
+from nanoleaf_with_lib import set_individual_panel_colors, nl
+# from nanoleaf_udp import set_individual_panel_colors, nl
 from getnanoIDs import get_panel_ids
 import numpy as np
 from PIL import Image
@@ -20,9 +21,19 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 color_history = []  # Global variable to store color history
 
+def hex_to_rgb(hex_color):
+    """Convert a hexadecimal color string to an RGB tuple."""
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
 def color_distance(color1, color2):
     """Calculate the Euclidean distance between two RGB colors."""
+    if isinstance(color1, str):
+        color1 = hex_to_rgb(color1)
+    if isinstance(color2, str):
+        color2 = hex_to_rgb(color2)
     return np.linalg.norm(np.array(color1) - np.array(color2))
+
 
 def significant_color_change(new_colors, threshold=10):
     """
@@ -56,7 +67,7 @@ def is_color_greyish(color, grey_tolerance=20):
     min_val = min(r, g, b)
     return (max_val - min_val) <= grey_tolerance
 
-def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, brightness_threshold=60, similarity_threshold=30):
+def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, similarity_threshold=30, min_color_amnt=16):
     """
     outputs the most interesting colors.
     """
@@ -69,6 +80,9 @@ def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, brightn
     # get bins with counts
     colors, counts = np.unique(quantized.reshape(-1, 3), axis=0, return_counts=True)
     
+    colors = np.array([color for color, count in zip(colors, counts) if count > min_color_amnt])
+    counts = np.array([count for count in counts if count > min_color_amnt])
+
     # sort bins by count
     sorted_indices = np.argsort(counts)[::-1]
     most_frequent_colors = colors[sorted_indices]
@@ -77,16 +91,26 @@ def quantize_color_and_sort_by_brightness(image, bin_size, num_colors=5, brightn
     # brighter_colors = [color for color in most_frequent_colors if 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2] > brightness_threshold]
 
     # Remove greyish colors
-    unique_colors = [color for color in most_frequent_colors if not is_color_greyish(color)]
+    no_gray_colors = [color for color in most_frequent_colors if not is_color_greyish(color)]
+    unique_colors = []
 
     # Remove colors that are too similar
-    for color in most_frequent_colors:
+    for color in no_gray_colors:
         if not any(color_distance(color, unique_color) < similarity_threshold for unique_color in unique_colors):
             unique_colors.append(color)
     
+    i = 0
+    while len(unique_colors) < num_colors:
+        try:
+            unique_colors.append(most_frequent_colors[i])
+        except:
+            unique_colors.append([10*i, 10*i, 10*i])
+        i+=1
+    
     # If there's a significant color change, update the color history
     if not config["less_sensitive"] or significant_color_change(unique_colors):
-        update_color_history(unique_colors)
+        if config["less_sensitive"]:
+            update_color_history(unique_colors)
         return unique_colors[:num_colors]
     else:
         # Return the last known good color set if no significant change
@@ -199,7 +223,10 @@ async def main():
     if config["use_nanoleaf"]:
         panel_ids = get_panel_ids()
         num_clusters = len(panel_ids)
-        nl.enable_extcontrol()
+        if nl.enable_extcontrol():
+            print("extcontrol enabled")
+        else:
+            print("extcontrol failed")
 
     window_name = None  # Replace with the actual window name
     screen_width = 1920  # Replace with your screen width
@@ -207,6 +234,7 @@ async def main():
 
     print("Running...")
     while True:
+        time.sleep(0.1)
         # screen = ImageGrab.grab(all_screens=True)
         screen = capture_screen(window_name, screen_width, screen_height)
         # screen.save("screencap.png")
@@ -222,7 +250,7 @@ async def main():
             # screen_partition = resize_image(screen_partition)
 
             adjusted_similarity_thresh = color_similarity_thresh + (contrast / 1000)
-            dom_colors = quantize_color_and_sort_by_brightness(screen_partition, bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh)
+            dom_colors = quantize_color_and_sort_by_brightness(screen_partition, bin_size, num_clusters, similarity_threshold=adjusted_similarity_thresh, min_color_amnt=config['min_color_amnt'])
 
             dom_colors = sort_colors_by_luminosity(dom_colors)
 
@@ -234,7 +262,7 @@ async def main():
                 bottom = partition[1][1] * window_height
                 partition_height = bottom - top
 
-                        # Draw the dominant colors for this partition
+            # Draw the dominant colors for this partition
             for i, color in enumerate(dom_colors):
                 color_hex = "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
                 hex_colors.append(color_hex)
@@ -248,7 +276,16 @@ async def main():
             panel_colors = {}   
             for panel_id_, i in zip(panel_ids,range(len(panel_ids))):
                 panel_colors[panel_id_] = hex_colors[i]
-            await set_individual_panel_colors(panel_colors)
+
+            # Check for significant color change
+            if  not config["less_sensitive"] and significant_color_change(hex_colors, threshold=80):
+                # If significant color change detected, update colors without fading
+                await set_individual_panel_colors(panel_colors, fade=False)
+            else:
+                # No significant change or less sensitive, update colors with fading
+                await set_individual_panel_colors(panel_colors, fade=True) 
+            update_color_history(hex_colors)
+            # await set_individual_panel_colors(panel_colors)
             # asyncio.run(start_fade(panel_colors, 3))
 
         if config["show_visual"]:

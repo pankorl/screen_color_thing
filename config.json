@@ -1,7 +1,8 @@
 {
     "use_nanoleaf": true,
-    "show_visual": true,
+    "show_visual": false,
     "sort_by_luminoscity": false,
     "sort_by_saturation": true,
-    "less_sensitive": false
+    "less_sensitive": false,
+    "min_color_amnt": 10
 }
