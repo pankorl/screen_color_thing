@@ -12,6 +12,8 @@ auth_file_path = os.path.join(script_dir, 'auth.json')
 with open(auth_file_path, "r") as f:
     auth_ip = json.load(f)
 
+panel_ids = []
+
 DEVICE_IP = auth_ip["ip"]
 AUTH_TOKEN = auth_ip["auth"]
 

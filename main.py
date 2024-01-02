@@ -1,10 +1,4 @@
-from logging import root
-import numpy as np
-import tkinter as tk
 import time
-# from nanoleaf_with_lib import set_individual_panel_colors, nl
-from nanoleaf_udp import set_individual_panel_colors, nl
-from getnanoIDs import get_panel_ids
 import json
 import sys
 import os
@@ -16,6 +10,7 @@ from overlay import Overlay
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QThread
+from colorset_events import color_set_event_handler, init_event_handler, get_ids
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -62,12 +57,9 @@ class Worker(QThread):
             overlay = Overlay(20, 120)
 
         if config["use_nanoleaf"]:
-            panel_ids = get_panel_ids()
+            panel_ids = get_ids()
             num_clusters = len(panel_ids)
-            if nl.enable_extcontrol():
-                print("extcontrol enabled")
-            else:
-                print("extcontrol failed")
+            init_event_handler()
 
         screen_width = 1920
         screen_height = 1080
@@ -110,10 +102,10 @@ class Worker(QThread):
                 # Check for significant color change
                 if  not config["less_sensitive"] and significant_color_change(hex_colors, color_history, threshold=config["quick_change_thresh"]):
                     # If significant color change detected, update colors without fading
-                    set_individual_panel_colors(panel_colors, config['transition_time'], fade=False)
+                    color_set_event_handler(panel_colors, 0)
                 else:
                     # No significant change or less sensitive, update colors with fading
-                    set_individual_panel_colors(panel_colors, config['transition_time'], fade=True) 
+                    color_set_event_handler(panel_colors, config['transition_time']) 
                 update_color_history(hex_colors)
   
 
