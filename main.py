@@ -89,10 +89,10 @@ async def main():
             # Check for significant color change
             if  not config["less_sensitive"] and significant_color_change(hex_colors, color_history, threshold=80):
                 # If significant color change detected, update colors without fading
-                await set_individual_panel_colors(panel_colors, fade=False)
+                await set_individual_panel_colors(panel_colors, config['transition_time'], fade=False)
             else:
                 # No significant change or less sensitive, update colors with fading
-                await set_individual_panel_colors(panel_colors, fade=True) 
+                await set_individual_panel_colors(panel_colors, config['transition_time'], fade=True) 
             update_color_history(hex_colors)
   
 
@@ -106,5 +106,6 @@ if __name__ == "__main__":
     else:
         config["use_nanoleaf"] = True if sys.argv.count("nl") > 0 else False
         config["show_visual"] = True if sys.argv.count("gui") > 0 else False
+        config["less_sensitive"] = True if sys.argv.count("ls") > 0 else False
         print(f"Config: {config}")
     asyncio.run(main())

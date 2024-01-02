@@ -3,8 +3,9 @@
     "show_visual": true,
     "sort_by_luminoscity": false,
     "sort_by_saturation": true,
-    "less_sensitive": true,
+    "less_sensitive": false,
     "min_color_amnt": 10,
     "screen_partitions": [],
-    "default_num_colors": 3
+    "default_num_colors": 3,
+    "transition_time": 3
 }
