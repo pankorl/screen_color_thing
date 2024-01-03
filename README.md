@@ -31,9 +31,15 @@
 }
 ```
 ### Running
-- You can either use the ``config.json`` to set the parameters and launch ``main.py``, or run the script using this command in the main directory:
+#### Quick start
+- The easiest way to run the script is to launch ``main.py`` after the installation steps (including "For use with Nanoleaf").
+#### Use with different parameters
+- You can either use the ``config.json`` to set the parameters and then launch ``main.py``, or run the script using this command in the main directory:
   ``py main.py nl gui ls``
-  assuming you have python installed, and you want to use both nanoleaf and the visual graphic. Otherwise, ``nl`` and/or ``gui`` can be omitted. ``ls`` will disable instant color change for changes above the ``quick_change_thresh`` threshold. With ``ls``, colors always change gradually according to ``transition_time``.
+  assuming you have python installed, and you want to use both nanoleaf and the visual overlay. Otherwise, ``nl`` and/or ``gui`` can be omitted. ``ls`` will disable instant color change for changes above the ``quick_change_thresh`` threshold. With ``ls`` in the command, colors always change gradually according to ``transition_time``.
+#### Running from taskbar
+[TODO]
+#### Using global powershell command
 - If you want to run the command from anywhere, you can either create a .bat file (not covered here) or make a powershell command:
 - open powershell
 - run ``notepad $PROFILE``
@@ -58,7 +64,6 @@ function nlmirror {
 - The handler functions there can be changed to fit with your own script.
 - Add your imports and add your own function calls inside the event handler functions.
 - Change ``lights_type`` in ``config.json`` to whatever you want to be passed in as the devicetype parameter in the event handlers. You can make this a string containing multiple words to make the script run on multiple types of devices at once, though this may introduce delays as the script runs on a single CPU thread (untested).
-
 
 # Errors
 [TODO]
