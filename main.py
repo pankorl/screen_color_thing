@@ -9,7 +9,7 @@ from screen_partitioning import split_image
 from overlay import Overlay
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import pyqtSignal, QThread
 from colorset_events import color_set_event_handler, init_event_handler, get_ids
 
 
@@ -32,18 +32,70 @@ async def main():
 
     exitAction = menu.addAction("Exit")
     exitAction.triggered.connect(app.quit)
+
+    global overlay
+    overlay = None
+
+
+    def pause_from_menu():
+        worker.pause()
+        pauseAction.setVisible(False)
+        unpauseAction.setVisible(True)
+
+    def unpause_from_menu():
+        worker.unpause()
+        unpauseAction.setVisible(False)
+        pauseAction.setVisible(True)
+
+    # def toggle_overlay():
+    #     global overlay
+    #     toggleOverlayAction.setChecked(not toggleOverlayAction.isChecked())
+    #     config['show_visual'] = not config['show_visual']
+    #     if overlay is None:
+    #         overlay = init_overlay()
+    #     if not config['show_visual']:
+    #         overlay.destroy()
+
     
+    pauseAction = menu.addAction("Pause")
+    pauseAction.triggered.connect(pause_from_menu)
+    unpauseAction = menu.addAction("Start")
+    unpauseAction.triggered.connect(unpause_from_menu)
+
+    # toggleOverlayAction = menu.addAction("Toggle overlay")
+    # toggleOverlayAction.setCheckable(True)
+    # toggleOverlayAction.triggered.connect(toggle_overlay)
+    # toggleOverlayAction.setChecked(config['show_visual'])
+
+    unpauseAction.setVisible(False)
+
     trayIcon.setContextMenu(menu)
     trayIcon.show()
+
+    # if config['show_visual'] and not overlay:
+    #     overlay = init_overlay()
+
     
     worker = Worker()
+    # worker.update_signal.connect(handle_update)
     worker.start()
 
     app.exec_()
 
+# def init_overlay():
+#     gui_wh = config["gui_w_h"]
+#     return Overlay(gui_wh[0], gui_wh[1])
+
+# def handle_update(partitions, all_dom_colors):
+#     global overlay
+#     # This function will be executed in the main thread
+#     # Call your draw_partitions method here
+#     overlay.draw_partitions(partitions, all_dom_colors)
 
 class Worker(QThread):
+    update_signal = pyqtSignal(object, object)
     def run(self):
+        self.paused = False
         num_clusters = config["default_num_colors"]
         color_similarity_thresh = 100
         bin_size = 30
@@ -54,8 +106,8 @@ class Worker(QThread):
             partitions = [None]
 
         if config["show_visual"]:
-            gui_wh = config["gui_w_h"]
-            overlay = Overlay(gui_wh[0], gui_wh[1])
+            self.gui_wh = config["gui_w_h"]
+            self.overlay = Overlay(self.gui_wh[0], self.gui_wh[1])
 
         if config["use_lights"]:
             panel_ids = get_ids(config['lights_type'])
@@ -68,6 +120,9 @@ class Worker(QThread):
         print("Running...")
 
         while True:
+            if self.paused:
+                time.sleep(0.5)
+                continue
             time.sleep(0.1)
 
             all_dom_colors = []
@@ -93,7 +148,8 @@ class Worker(QThread):
                     hex_colors.append(color_hex)
 
             if config["show_visual"]:
-                overlay.draw_partitions(partitions, all_dom_colors)
+                # self.update_signal.emit(partitions, all_dom_colors)
+                self.overlay.draw_partitions(partitions, all_dom_colors)
 
             if config["use_lights"]:
                 panel_colors = {}   
@@ -108,7 +164,16 @@ class Worker(QThread):
                     # No significant change or less sensitive, update colors with fading
                     color_set_event_handler(config['lights_type'], panel_colors, config['transition_time']) 
                 update_color_history(hex_colors)
+
+    def pause(self):
+        self.paused = True
   
+    def unpause(self):
+        """
+        unpause
+        """
+        self.paused = False
+
 
 if __name__ == "__main__":
     config_file_path = os.path.join(script_dir, 'config.json')
@@ -123,5 +188,3 @@ if __name__ == "__main__":
         config["less_sensitive"] = True if sys.argv.count("ls") > 0 else False
         print(f"Config: {config}")
     asyncio.run(main())
-
-

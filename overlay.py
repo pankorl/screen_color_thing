@@ -17,6 +17,9 @@ class Overlay():
         self.canvas = tk.Canvas(self.root, width=self.window_width, height=self.window_height)
         self.canvas.pack()
 
+    def destroy(self):
+        self.canvas.destroy()
+
     def clear(self):
         self.canvas.delete("all")
 
