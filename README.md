@@ -31,6 +31,7 @@
 }
 ```
 ### Running
+NB! Note that the script must be stopped from the systems tray. Find the nlmirror icon and right click -> Exit.
 #### Quick start
 - The easiest way to run the script is to launch ``main.py`` after the installation steps (including "For use with Nanoleaf").
 #### Use with different parameters
