@@ -18,6 +18,7 @@ class Overlay():
         self.canvas.pack()
 
     def destroy(self):
+        self.clear()
         self.canvas.destroy()
 
     def clear(self):

@@ -31,7 +31,18 @@ def get_ids(devicetype: str):
     # For nanoleaf:
     if "nanoleaf" in devicetype:
         return get_panel_ids()
+    
 
+def inc_brightness(devicetype: str):
+    
+    if "nanoleaf" in devicetype:
+        nl.increment_brightness(10)
+
+
+def decr_brightness(devicetype: str):
+    
+    if "nanoleaf" in devicetype:
+        nl.increment_brightness(-10)
 
 
 def nanoleaf_init_event_handler():

@@ -10,7 +10,7 @@ from overlay import Overlay
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal, QThread
-from colorset_events import color_set_event_handler, init_event_handler, get_ids
+from colorset_events import color_set_event_handler, init_event_handler, get_ids, inc_brightness, decr_brightness
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +35,8 @@ async def main():
 
     global overlay
     overlay = None
+    global worker
+    worker = None
 
 
     def pause_from_menu():
@@ -47,14 +49,28 @@ async def main():
         unpauseAction.setVisible(False)
         pauseAction.setVisible(True)
 
-    # def toggle_overlay():
-    #     global overlay
-    #     toggleOverlayAction.setChecked(not toggleOverlayAction.isChecked())
-    #     config['show_visual'] = not config['show_visual']
-    #     if overlay is None:
-    #         overlay = init_overlay()
-    #     if not config['show_visual']:
-    #         overlay.destroy()
+    def restart_worker(worker_: Worker):    
+        if worker_ is not None:
+            worker_.stop()
+            worker_.wait()
+            # while(worker_.is_running_):
+            #     time.sleep(0.1)
+            del worker_
+        new_worker = Worker()
+        # new_worker.start()
+        # time.sleep(1)
+        return new_worker
+
+    def toggle_overlay():
+        global worker
+        toggleOverlayAction.setChecked(not toggleOverlayAction.isChecked())
+        config['show_visual'] = not config['show_visual']
+
+        worker = restart_worker(worker)
+        worker.start()
+        time.sleep(1)
+        # return new_worker
+
 
     
     pauseAction = menu.addAction("Pause")
@@ -62,35 +78,27 @@ async def main():
     unpauseAction = menu.addAction("Start")
     unpauseAction.triggered.connect(unpause_from_menu)
 
-    # toggleOverlayAction = menu.addAction("Toggle overlay")
-    # toggleOverlayAction.setCheckable(True)
-    # toggleOverlayAction.triggered.connect(toggle_overlay)
-    # toggleOverlayAction.setChecked(config['show_visual'])
+    toggleOverlayAction = menu.addAction("Toggle overlay")
+    toggleOverlayAction.setCheckable(True)
+    toggleOverlayAction.triggered.connect(lambda: toggle_overlay())
+
+    toggleOverlayAction.setChecked(config['show_visual'])
 
     unpauseAction.setVisible(False)
 
+    decrAction = menu.addAction("-")
+    decrAction.triggered.connect(lambda: decr_brightness(config['lights_type']))
+    incAction = menu.addAction("+")
+    incAction.triggered.connect(lambda: inc_brightness(config['lights_type']))
+
     trayIcon.setContextMenu(menu)
     trayIcon.show()
-
-    # if config['show_visual'] and not overlay:
-    #     overlay = init_overlay()
-
     
     worker = Worker()
-    # worker.update_signal.connect(handle_update)
     worker.start()
-
+    
     app.exec_()
 
-# def init_overlay():
-#     gui_wh = config["gui_w_h"]
-#     return Overlay(gui_wh[0], gui_wh[1])
-
-# def handle_update(partitions, all_dom_colors):
-#     global overlay
-#     # This function will be executed in the main thread
-#     # Call your draw_partitions method here
-#     overlay.draw_partitions(partitions, all_dom_colors)
 
 class Worker(QThread):
     update_signal = pyqtSignal(object, object)
@@ -100,14 +108,14 @@ class Worker(QThread):
         color_similarity_thresh = 100
         bin_size = 30
         partitions = config['screen_partitions']
+        self.is_running_ = True
 
         if len(partitions) == 0:
             # partitions = [[[0,1],[0,1]]]
             partitions = [None]
 
         if config["show_visual"]:
-            self.gui_wh = config["gui_w_h"]
-            self.overlay = Overlay(self.gui_wh[0], self.gui_wh[1])
+            self.init_visual()
 
         if config["use_lights"]:
             panel_ids = get_ids(config['lights_type'])
@@ -119,11 +127,12 @@ class Worker(QThread):
 
         print("Running...")
 
-        while True:
+        while self.is_running_:
+            start_time = time.time()
             if self.paused:
                 time.sleep(0.5)
                 continue
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
             all_dom_colors = []
             hex_colors = []
@@ -149,8 +158,10 @@ class Worker(QThread):
 
             if config["show_visual"]:
                 # self.update_signal.emit(partitions, all_dom_colors)
-                self.overlay.draw_partitions(partitions, all_dom_colors)
-
+                try:
+                    self.overlay.draw_partitions(partitions, all_dom_colors)
+                except:
+                    time.sleep(1)
             if config["use_lights"]:
                 panel_colors = {}   
                 for panel_id_, i in zip(panel_ids,range(len(panel_ids))):
@@ -164,6 +175,17 @@ class Worker(QThread):
                     # No significant change or less sensitive, update colors with fading
                     color_set_event_handler(config['lights_type'], panel_colors, config['transition_time']) 
                 update_color_history(hex_colors)
+            time.sleep(max((0, 0.1-(time.time()-start_time))))
+            # print(time.time()-start_time)
+        print("Stopping thread")
+        try:
+            self.overlay.destroy()
+        except:
+            pass
+
+    def init_visual(self):
+        self.gui_wh = config["gui_w_h"]
+        self.overlay = Overlay(self.gui_wh[0], self.gui_wh[1])
 
     def pause(self):
         self.paused = True
@@ -173,6 +195,9 @@ class Worker(QThread):
         unpause
         """
         self.paused = False
+
+    def stop(self):
+        self.is_running_ = False
 
 
 if __name__ == "__main__":
@@ -188,3 +213,5 @@ if __name__ == "__main__":
         config["less_sensitive"] = True if sys.argv.count("ls") > 0 else False
         print(f"Config: {config}")
     asyncio.run(main())
+
+
