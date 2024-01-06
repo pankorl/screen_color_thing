@@ -8,6 +8,7 @@ def color_set_event_handler(devicetype: str, id_colors: dict, transition_time: i
     :param transition_time:
     """
 
+
     # For nanoleaf with udp:
     if "nanoleaf" in devicetype:
         set_individual_panel_colors(id_colors, transition_time, fade=False if transition_time == None else transition_time)
@@ -27,6 +28,7 @@ def get_ids(devicetype: str):
     Gets called once when the script starts.
     Only needs to return an iterable of the same length as the number of colors.
     """
+    # In hindsight the panel ids aren't really needed in the main script as all the main script uses them for is as keys for the colors.
 
     # For nanoleaf:
     if "nanoleaf" in devicetype:
@@ -46,6 +48,7 @@ def set_brightness(devicetype: str, value):
     print(value)
 
     if "nanoleaf" in devicetype:
+        # This isn't over UDP
         nl.set_brightness(value)
 
 def decr_brightness(devicetype: str):
