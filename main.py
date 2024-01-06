@@ -7,10 +7,10 @@ from screencap import capture_screen_scaled
 from color_picker import get_colors_from_image, get_colors_from_screen, significant_color_change
 from screen_partitioning import split_image
 from overlay import Overlay
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QSlider, QWidgetAction
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal, QThread
-from colorset_events import color_set_event_handler, init_event_handler, get_ids, inc_brightness, decr_brightness
+from PyQt5.QtCore import pyqtSignal, QThread, Qt
+from colorset_events import color_set_event_handler, init_event_handler, get_ids, inc_brightness, decr_brightness, set_brightness
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -63,33 +63,43 @@ async def main():
 
     def toggle_overlay():
         global worker
-        toggleOverlayAction.setChecked(not toggleOverlayAction.isChecked())
+        # toggleOverlayAction.setChecked(not toggleOverlayAction.isChecked())
         config['show_visual'] = not config['show_visual']
 
         worker = restart_worker(worker)
         worker.start()
         time.sleep(1)
         # return new_worker
-
-
+        
     
     pauseAction = menu.addAction("Pause")
     pauseAction.triggered.connect(pause_from_menu)
     unpauseAction = menu.addAction("Start")
     unpauseAction.triggered.connect(unpause_from_menu)
+    unpauseAction.setVisible(False)
 
     toggleOverlayAction = menu.addAction("Toggle overlay")
     toggleOverlayAction.setCheckable(True)
     toggleOverlayAction.triggered.connect(lambda: toggle_overlay())
-
     toggleOverlayAction.setChecked(config['show_visual'])
 
-    unpauseAction.setVisible(False)
 
-    decrAction = menu.addAction("-")
-    decrAction.triggered.connect(lambda: decr_brightness(config['lights_type']))
-    incAction = menu.addAction("+")
-    incAction.triggered.connect(lambda: inc_brightness(config['lights_type']))
+    # decrAction = menu.addAction("-")
+    # decrAction.triggered.connect(lambda: decr_brightness(config['lights_type']))
+    # incAction = menu.addAction("+")
+    # incAction.triggered.connect(lambda: inc_brightness(config['lights_type']))
+
+    brightnessSlider = QSlider(Qt.Horizontal)
+    brightnessSlider.setMinimum(0)
+    brightnessSlider.setMaximum(100)
+    brightnessSlider.setValue(100)
+    brightnessSlider.valueChanged.connect(lambda: set_brightness(config['lights_type'], brightnessSlider.value()))
+
+    widgetAction = QWidgetAction(menu)
+    widgetAction.setDefaultWidget(brightnessSlider)
+
+    menu.addAction(widgetAction)
+    
 
     trayIcon.setContextMenu(menu)
     trayIcon.show()
