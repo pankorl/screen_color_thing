@@ -45,7 +45,6 @@ def set_brightness(devicetype: str, value):
     """
     Set brightness to value in percent
     """
-    print(value)
 
     if "nanoleaf" in devicetype:
         # This isn't over UDP

@@ -1,7 +1,12 @@
 import requests
 import json
+import os
 
-with open("auth.json", "r") as f:
+script_dir = os.path.dirname(os.path.abspath(__file__))
+auth_file_path = os.path.join(script_dir, 'auth.json')
+
+
+with open(auth_file_path, "r") as f:
     auth_ip = json.load(f)
 
 DEVICE_IP = auth_ip["ip"]
