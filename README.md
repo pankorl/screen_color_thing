@@ -1,5 +1,6 @@
 # Installation
 - clone or download the repo
+- Dependencies [TODO]
 
 ## For use with Nanoleaf
 - you need to make an ``auth.json`` file in the same folder with this structure:
