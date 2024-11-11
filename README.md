@@ -61,6 +61,15 @@ function nlmirror {
 - pick whatever function name you want
 - run this command in powershell by typing for example ``nlmirror nl gui``
 
+### Additional tips
+If the Nanoleaf device is controlled by another app, the udp stream shuts off. This is so you can override control by using other apps (e.g. to turn the lights off). The udp stream has to be turned back on for this program to continue. This can be done by **any** of the following ways:
+- Set the brightness to 69% (by any means)
+- Press reload button in systems tray
+- Toggle overlay in systems tray
+- Restart program
+
+Only one of the above steps is needed for the program to continue.
+
 # Use with other devices
 - All interactions with the nanoleaf goes through ``colorset_events.py``. 
 - The handler functions there can be changed to fit with your own script.
