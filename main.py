@@ -10,7 +10,7 @@ from overlay import Overlay
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QSlider, QWidgetAction
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal, QThread, Qt
-from colorset_events import color_set_event_handler, init_event_handler, get_ids, inc_brightness, decr_brightness, set_brightness
+from colorset_events import color_set_event_handler, init_event_handler, get_ids, inc_brightness, decr_brightness, set_brightness, get_current_brightness
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -101,7 +101,7 @@ async def main():
     brightnessSlider = QSlider(Qt.Horizontal)
     brightnessSlider.setMinimum(0)
     brightnessSlider.setMaximum(100)
-    brightnessSlider.setValue(100)
+    brightnessSlider.setValue(get_current_brightness(config["lights_type"]))
     brightnessSlider.valueChanged.connect(lambda: set_brightness(config['lights_type'], brightnessSlider.value()))
 
     widgetAction = QWidgetAction(menu)
@@ -146,12 +146,24 @@ class Worker(QThread):
 
         print("Running...")
 
+        frames_between_color_check = 10
+        frames_counter = 0
+
         while self.is_running_:
             start_time = time.time()
             if self.paused:
                 time.sleep(0.5)
                 continue
             # time.sleep(0.1)
+
+            frames_counter += 1
+            if frames_counter >= frames_between_color_check:
+                curr_brightness = get_current_brightness(config["lights_type"])
+                if int(curr_brightness) == 69:
+                    set_brightness(config["lights_type"], 100)
+                    init_event_handler(config["lights_type"])
+                    
+
 
             all_dom_colors = []
             hex_colors = []

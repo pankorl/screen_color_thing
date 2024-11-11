@@ -57,3 +57,5 @@ def set_individual_panel_colors(panel_colors, transition_time=3, fade=True):
     udp_message = create_udp_message(panels_info)
     send_udp_message(DEVICE_IP, 60222, udp_message)
 
+def get_state():
+    pass

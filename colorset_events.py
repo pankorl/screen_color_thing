@@ -50,6 +50,14 @@ def set_brightness(devicetype: str, value):
         # This isn't over UDP
         nl.set_brightness(value)
 
+def get_current_brightness(devicetype: str):
+
+    if "nanoleaf" in devicetype:
+        current_effect = nl.get_brightness()
+        # print(current_effect)
+        return current_effect
+    return None
+
 def decr_brightness(devicetype: str):
     
     if "nanoleaf" in devicetype:
