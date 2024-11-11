@@ -48,7 +48,7 @@ AUTH_TOKEN = auth_ip["auth"]
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         hex_color = "#FFFFFF"
-        print("Usage: py set_hex.py #HEXCOLOR")
+        print("Usage: py sethex.py #HEXCOLOR")
         # sys.exit(1)
     else:
         hex_color = sys.argv[1]  # Get hex color from command line argument

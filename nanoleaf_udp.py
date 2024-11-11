@@ -44,9 +44,12 @@ def create_udp_message(panels_info):
     return message
 
 def send_udp_message(ip, port, message):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(message, (ip, port))
-    sock.close()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(message, (ip, port))
+        sock.close()
+    except Exception as e:
+        print(f"Error sending UDP message: {e}")
 
 def set_individual_panel_colors(panel_colors, transition_time=3, fade=True):
     transition_time = transition_time if fade else 0

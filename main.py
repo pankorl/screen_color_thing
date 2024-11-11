@@ -70,6 +70,12 @@ async def main():
         worker.start()
         time.sleep(1)
         # return new_worker
+
+    def restart_stream():
+        global worker
+        worker = restart_worker(worker)
+        worker.start()
+        time.sleep(1)
         
     
     pauseAction = menu.addAction("Pause")
@@ -77,6 +83,9 @@ async def main():
     unpauseAction = menu.addAction("Start")
     unpauseAction.triggered.connect(unpause_from_menu)
     unpauseAction.setVisible(False)
+
+    reloadAction = menu.addAction("Reload")
+    reloadAction.triggered.connect(restart_stream)
 
     toggleOverlayAction = menu.addAction("Toggle overlay")
     toggleOverlayAction.setCheckable(True)
