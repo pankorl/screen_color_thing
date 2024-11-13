@@ -158,6 +158,7 @@ class Worker(QThread):
 
             frames_counter += 1
             if frames_counter >= frames_between_color_check:
+                frames_counter = 0
                 curr_brightness = get_current_brightness(config["lights_type"])
                 if int(curr_brightness) == 69:
                     set_brightness(config["lights_type"], 100)
